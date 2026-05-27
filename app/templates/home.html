@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}SwimDB — Athlete Search{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-3xl font-bold text-slate-900 mb-2">Find an Athlete</h1>
+  <p class="text-slate-500 mb-8 text-sm">Search by name across international, USA national, and college competition.</p>
+
+  <div class="relative">
+    <input
+      id="athlete-search-input"
+      type="search"
+      name="q"
+      placeholder="Type athlete name…"
+      autocomplete="off"
+      class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm
+             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             bg-white"
+      hx-get="/htmx/athlete-search"
+      hx-trigger="keyup changed delay:300ms, search"
+      hx-target="#athlete-search-results"
+      hx-swap="innerHTML"
+      hx-indicator="#search-spinner"
+    >
+    <span id="search-spinner" class="htmx-indicator absolute right-3 top-3.5 text-blue-500">
+      <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+    </span>
+  </div>
+
+  <div id="athlete-search-results" class="mt-1"></div>
+
+  <div class="mt-12 border-t border-slate-200 pt-8">
+    <h2 class="text-lg font-semibold text-slate-700 mb-3">Search by Event</h2>
+    <p class="text-slate-500 text-sm mb-4">Find the top times for any event across all courses.</p>
+    <a href="/events"
+       class="inline-block bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors">
+      Browse Event Times &rarr;
+    </a>
+  </div>
+</div>
+{% endblock %}

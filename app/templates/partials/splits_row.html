@@ -1,0 +1,31 @@
+{% if collapsed %}
+<tr id="splits-{{ result_id }}"><td colspan="6"></td></tr>
+{% else %}
+<tr id="splits-{{ result_id }}"
+    class="bg-blue-50 cursor-pointer"
+    hx-get="/htmx/result/{{ result_id }}/splits?collapse=true"
+    hx-target="#splits-{{ result_id }}"
+    hx-swap="outerHTML">
+  <td colspan="6" class="px-6 py-3">
+    {% if splits %}
+    <div class="flex flex-wrap gap-2">
+      {% for s in splits %}
+      <div class="bg-white border border-blue-200 rounded-lg px-3 py-1.5 text-xs font-mono">
+        <span class="text-slate-400">{{ s.distance_meters }}m</span>
+        <span class="mx-1 text-slate-300">|</span>
+        <span class="font-semibold text-slate-700">
+          {% if s.lap_seconds %}{{ s.lap_seconds | format_time }}{% else %}—{% endif %}
+        </span>
+        {% if s.cumulative_seconds %}
+        <span class="ml-1 text-slate-400">({{ s.cumulative_seconds | format_time }})</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="text-xs text-slate-400 mt-2">Click to collapse &uarr;</p>
+    {% else %}
+    <span class="text-xs text-slate-400 italic">No splits available for this result.</span>
+    {% endif %}
+  </td>
+</tr>
+{% endif %}

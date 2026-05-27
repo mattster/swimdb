@@ -1,0 +1,37 @@
+{% if collapsed %}
+<div id="ath-splits-{{ result_id }}" class="mt-1.5">
+  <span class="text-xs text-blue-600 cursor-pointer hover:underline"
+        hx-get="/htmx/result/{{ result_id }}/splits?inline=true"
+        hx-target="#ath-splits-{{ result_id }}"
+        hx-swap="outerHTML">
+    Show splits &#9662;
+  </span>
+</div>
+{% else %}
+<div id="ath-splits-{{ result_id }}" class="mt-1.5">
+  <span class="text-xs text-blue-600 cursor-pointer hover:underline"
+        hx-get="/htmx/result/{{ result_id }}/splits?inline=true&collapse=true"
+        hx-target="#ath-splits-{{ result_id }}"
+        hx-swap="outerHTML">
+    Hide splits &#9652;
+  </span>
+  {% if splits %}
+  <div class="flex flex-wrap gap-2 mt-2">
+    {% for s in splits %}
+    <div class="bg-white border border-blue-200 rounded-lg px-3 py-1.5 text-xs font-mono">
+      <span class="text-slate-400">{{ s.distance_meters }}m</span>
+      <span class="mx-1 text-slate-300">|</span>
+      <span class="font-semibold text-slate-700">
+        {% if s.lap_seconds %}{{ s.lap_seconds | format_time }}{% else %}—{% endif %}
+      </span>
+      {% if s.cumulative_seconds %}
+      <span class="ml-1 text-slate-400">({{ s.cumulative_seconds | format_time }})</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-xs text-slate-400 italic mt-1">No splits available for this result.</p>
+  {% endif %}
+</div>
+{% endif %}
