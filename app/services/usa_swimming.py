@@ -127,16 +127,43 @@ class USASwimmingSource(DataSource):
         self, event_id: int, gender_val: str, comp_year: str, limit: int,
         expected_event_label: str = "",
     ) -> list[dict]:
-        from playwright.async_api import async_playwright
+        from playwright.async_api import Error as PlaywrightError, async_playwright
 
         log.info("USAS scraping event_id=%d gender=%s year=%s limit=%d", event_id, gender_val, comp_year, limit)
 
+        try:
+            return await self._scrape_event_rank_inner(
+                event_id, gender_val, comp_year, limit, expected_event_label
+            )
+        except PlaywrightError as exc:
+            log.warning("USAS Playwright scrape failed (event_id=%d): %s", event_id, exc)
+            return []
+        except Exception as exc:
+            log.warning("USAS scrape unexpected error (event_id=%d): %s", event_id, exc)
+            return []
+
+    async def _scrape_event_rank_inner(
+        self, event_id: int, gender_val: str, comp_year: str, limit: int,
+        expected_event_label: str = "",
+    ) -> list[dict]:
+        from playwright.async_api import async_playwright
+
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True)
+            browser = await pw.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled", "--no-sandbox"],
+            )
             try:
-                page = await browser.new_page()
+                context = await browser.new_context(
+                    user_agent=(
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/124.0.0.0 Safari/537.36"
+                    ),
+                )
+                page = await context.new_page()
                 await page.goto(_DATAHUB_URL, timeout=30000)
-                await page.wait_for_selector('select[name="competitionYearId"]', timeout=15000)
+                await page.wait_for_selector('select[name="competitionYearId"]', timeout=20000)
                 await page.wait_for_timeout(1500)
 
                 # Select event FIRST to avoid the page auto-loading a default event
