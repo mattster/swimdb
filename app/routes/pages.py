@@ -21,9 +21,10 @@ async def events(
     stroke: str = "freestyle",
     course: str = "LCM",
     limit: int = 50,
-    year: int | None = None,
+    year: str | None = None,
     session: AsyncSession = Depends(get_db),
 ):
+    year_int: int | None = int(year) if year else None
     results = []
     error = None
     if request.query_params:
@@ -38,7 +39,7 @@ async def events(
                 stroke=norm_stroke,
                 course=course,
                 limit=min(max(limit, 1), 100),
-                year=year,
+                year=year_int,
                 session=session,
             )
         except Exception as exc:
@@ -56,7 +57,7 @@ async def events(
                 "stroke": stroke,
                 "course": course,
                 "limit": limit,
-                "year": year,
+                "year": year_int,
             },
         },
     )

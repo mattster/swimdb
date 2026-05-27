@@ -42,13 +42,14 @@ async def event_results(
     stroke: str = "freestyle",
     course: str = "LCM",
     limit: int = 50,
-    year: int | None = None,
+    year: str | None = None,
     session: AsyncSession = Depends(get_db),
 ):
     _require_htmx(request)
     from app.services import aggregator
     from app.services.normalizer import normalize_stroke
 
+    year_int: int | None = int(year) if year else None
     results = []
     error = None
     try:
@@ -59,7 +60,7 @@ async def event_results(
             stroke=norm_stroke,
             course=course,
             limit=min(max(limit, 1), 100),
-            year=year,
+            year=year_int,
             session=session,
         )
     except Exception as exc:
