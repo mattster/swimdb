@@ -27,59 +27,23 @@
   </div>
 </div>
 
-{% if meets_by_year %}
-<div class="space-y-3">
-  {% for year, results in meets_by_year.items() %}
-  <details class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden" {% if loop.first %}open{% endif %}>
-    <summary class="cursor-pointer select-none px-5 py-3 bg-slate-50 border-b border-slate-200
-                    flex items-center justify-between hover:bg-slate-100 transition-colors">
-      <span class="font-semibold text-slate-800">{{ year if year else 'Unknown Year' }}</span>
-      <span class="text-xs text-slate-400">{{ results | length }} swim{{ 's' if results | length != 1 else '' }}</span>
-    </summary>
-
-    <div class="divide-y divide-slate-100">
-      {% for r in results %}
-      <div class="px-5 py-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="font-medium text-slate-800">
-              {{ r.event_distance }}m
-              {{ r.event_stroke | replace('im', 'IM') | title }}
-            </span>
-            <span class="ml-2 text-xs font-semibold bg-blue-100 text-blue-700 rounded px-1.5 py-0.5">
-              {{ r.course }}
-            </span>
-          </div>
-          <div class="flex items-center gap-4">
-            <span class="font-mono font-semibold text-slate-900">{{ r.time_display }}</span>
-            {% if r.swim_date %}
-            <span class="text-xs text-slate-400">{{ r.swim_date.strftime('%d %b %Y') }}</span>
-            {% endif %}
-          </div>
-        </div>
-
-        {% if r.meet %}
-        <div class="text-xs text-slate-500 mt-0.5">{{ r.meet.name }}</div>
-        {% endif %}
-
-        <div id="ath-splits-{{ r.id }}" class="mt-1.5">
-          <span class="text-xs text-blue-600 cursor-pointer hover:underline"
-                hx-get="/htmx/result/{{ r.id }}/splits?inline=true"
-                hx-target="#ath-splits-{{ r.id }}"
-                hx-swap="outerHTML">
-            Show splits &#9662;
-          </span>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </details>
+<form id="course-filter"
+      hx-get="/htmx/athlete/{{ athlete.id }}/results"
+      hx-target="#athlete-results"
+      hx-swap="innerHTML"
+      hx-trigger="change"
+      class="bg-white border border-slate-200 rounded-xl shadow-sm px-5 py-4 mb-4 flex items-center gap-6">
+  <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Course</span>
+  {% for course in ["LCM", "SCM", "SCY"] %}
+  <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-slate-700">
+    <input type="checkbox" name="course" value="{{ course }}" checked
+           class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+    {{ course }}
+  </label>
   {% endfor %}
-</div>
+</form>
 
-{% else %}
-<div class="bg-white border border-slate-200 rounded-xl px-5 py-8 text-center text-slate-500">
-  No results found for this athlete yet.
+<div id="athlete-results">
+  {% include "partials/athlete_results.html" %}
 </div>
-{% endif %}
 {% endblock %}

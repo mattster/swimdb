@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,6 +69,35 @@ async def event_results(
         request,
         "partials/event_table.html",
         {"results": results, "error": error},
+    )
+
+
+@router.get("/athlete/{athlete_id}/results", response_class=HTMLResponse)
+async def athlete_results_partial(
+    request: Request,
+    athlete_id: int,
+    course: list[str] = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+):
+    _require_htmx(request)
+    from app.services import aggregator
+
+    all_results = await aggregator.get_athlete_results(athlete_id, session)
+
+    selected_courses = set(course) if course else set()
+    no_courses_selected = len(selected_courses) == 0
+    filtered = [r for r in all_results if r.course in selected_courses]
+
+    meets_by_year: dict[int, list] = {}
+    for r in filtered:
+        yr = r.swim_date.year if r.swim_date else 0
+        meets_by_year.setdefault(yr, []).append(r)
+    meets_by_year = dict(sorted(meets_by_year.items(), reverse=True))
+
+    return templates.TemplateResponse(
+        request,
+        "partials/athlete_results.html",
+        {"meets_by_year": meets_by_year, "no_courses_selected": no_courses_selected},
     )
 
 
