@@ -29,6 +29,12 @@ class TestEventsPage:
         assert "LCM" in resp.text
         assert "SCY" in resp.text
 
+    async def test_distance_options_have_no_m_suffix(self, client):
+        resp = await client.get("/events")
+        for distance in [50, 100, 200, 400, 800, 1500]:
+            assert f">{distance}<" in resp.text
+            assert f">{distance}m<" not in resp.text
+
     async def test_valid_params_returns_200(self, client):
         with patch(
             "app.services.aggregator.get_event_top_times",
