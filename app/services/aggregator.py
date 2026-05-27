@@ -138,16 +138,11 @@ async def get_event_top_times(
     if not sources:
         return []
 
-    # Only serve from the results table when a fresh source-cache entry exists.
-    # Without this guard, rows stored from individual athlete lookups would
-    # satisfy the query and prevent a proper ranked list from being fetched.
-    if await _event_cache_is_fresh(gender, distance, stroke, course, year, sources, session):
-        db_results = await _load_results_from_db(
-            gender, distance, stroke, course, limit, year, session
-        )
-        if db_results:
-            return db_results
-
+    # Always go through the source adapters — they maintain their own
+    # data_source_cache (24 h TTL) and return immediately from JSON when
+    # the cache is fresh. We cannot shortcut via _load_results_from_db
+    # because that table also holds rows from individual athlete lookups,
+    # which would pollute the ranking view with incomplete data.
     fetch_tasks = [
         src.get_event_top_times(gender, distance, stroke, course, limit, year, session)
         for src in sources
@@ -163,30 +158,6 @@ async def get_event_top_times(
 
     orm_results = await _upsert_results(top_records, session)
     return orm_results[:limit]
-
-
-async def _event_cache_is_fresh(
-    gender: str,
-    distance: int,
-    stroke: str,
-    course: str,
-    year: int | None,
-    sources: list,
-    session: AsyncSession,
-) -> bool:
-    """Return True if at least one source has a live cache entry for this event."""
-    for src in sources:
-        cache_key = src._cache_key(
-            "event_top_times",
-            gender=gender,
-            distance=distance,
-            stroke=stroke,
-            course=course,
-            year=year or "all",
-        )
-        if await src._get_cached(cache_key, session):
-            return True
-    return False
 
 
 async def _load_results_from_db(
@@ -332,7 +303,15 @@ async def _get_or_create_result(
             )
         )
     if existing:
-        return existing
+        return await session.scalar(
+            select(Result)
+            .where(Result.id == existing.id)
+            .options(
+                selectinload(Result.athlete),
+                selectinload(Result.meet),
+                selectinload(Result.splits),
+            )
+        )
 
     result = Result(
         athlete_id=athlete_id,
