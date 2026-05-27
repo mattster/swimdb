@@ -9,7 +9,7 @@
   hx-target="#event-table"
   hx-swap="innerHTML"
   hx-push-url="true"
-  hx-indicator="#results-spinner"
+  hx-indicator="#results-spinner,#table-loading"
   class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-6"
 >
   <div class="flex flex-wrap gap-4 items-end">
@@ -83,6 +83,19 @@
 
   </div>
 </form>
+
+<div id="table-loading"
+     class="htmx-indicator flex items-center justify-center gap-3 py-12 mb-4
+            bg-white border border-slate-200 rounded-xl shadow-sm text-slate-500">
+  <svg class="animate-spin h-5 w-5 text-blue-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+  </svg>
+  <span class="text-sm">
+    Fetching results&hellip;
+    <span class="text-slate-400">SCY searches use USA Swimming&rsquo;s data hub and may take up to 20&nbsp;seconds on first load.</span>
+  </span>
+</div>
 
 <div id="event-table">
   {% if results is defined %}
