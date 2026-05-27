@@ -134,15 +134,19 @@ async def get_event_top_times(
     year: int | None,
     session: AsyncSession,
 ) -> list[Result]:
-    db_results = await _load_results_from_db(
-        gender, distance, stroke, course, limit, year, session
-    )
-    if db_results:
-        return db_results
-
     sources = _SOURCES_BY_COURSE.get(course, [])
     if not sources:
         return []
+
+    # Only serve from the results table when a fresh source-cache entry exists.
+    # Without this guard, rows stored from individual athlete lookups would
+    # satisfy the query and prevent a proper ranked list from being fetched.
+    if await _event_cache_is_fresh(gender, distance, stroke, course, year, sources, session):
+        db_results = await _load_results_from_db(
+            gender, distance, stroke, course, limit, year, session
+        )
+        if db_results:
+            return db_results
 
     fetch_tasks = [
         src.get_event_top_times(gender, distance, stroke, course, limit, year, session)
@@ -159,6 +163,30 @@ async def get_event_top_times(
 
     orm_results = await _upsert_results(top_records, session)
     return orm_results[:limit]
+
+
+async def _event_cache_is_fresh(
+    gender: str,
+    distance: int,
+    stroke: str,
+    course: str,
+    year: int | None,
+    sources: list,
+    session: AsyncSession,
+) -> bool:
+    """Return True if at least one source has a live cache entry for this event."""
+    for src in sources:
+        cache_key = src._cache_key(
+            "event_top_times",
+            gender=gender,
+            distance=distance,
+            stroke=stroke,
+            course=course,
+            year=year or "all",
+        )
+        if await src._get_cached(cache_key, session):
+            return True
+    return False
 
 
 async def _load_results_from_db(
