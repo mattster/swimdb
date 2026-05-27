@@ -42,7 +42,7 @@ def format_time(seconds: float | None) -> str:
     minutes = int(seconds // 60)
     secs = seconds % 60
     if minutes:
-        return f"{minutes}:{secs:06.2f}"
+        return f"{minutes}:{secs:05.2f}"
     return f"{secs:.2f}"
 
 
