@@ -134,16 +134,15 @@ async def get_event_top_times(
     year: int | None,
     session: AsyncSession,
 ) -> list[Result]:
-    db_results = await _load_results_from_db(
-        gender, distance, stroke, course, limit, year, session
-    )
-    if db_results:
-        return db_results
-
     sources = _SOURCES_BY_COURSE.get(course, [])
     if not sources:
         return []
 
+    # Always go through the source adapters — they maintain their own
+    # data_source_cache (24 h TTL) and return immediately from JSON when
+    # the cache is fresh. We cannot shortcut via _load_results_from_db
+    # because that table also holds rows from individual athlete lookups,
+    # which would pollute the ranking view with incomplete data.
     fetch_tasks = [
         src.get_event_top_times(gender, distance, stroke, course, limit, year, session)
         for src in sources
@@ -304,7 +303,15 @@ async def _get_or_create_result(
             )
         )
     if existing:
-        return existing
+        return await session.scalar(
+            select(Result)
+            .where(Result.id == existing.id)
+            .options(
+                selectinload(Result.athlete),
+                selectinload(Result.meet),
+                selectinload(Result.splits),
+            )
+        )
 
     result = Result(
         athlete_id=athlete_id,
