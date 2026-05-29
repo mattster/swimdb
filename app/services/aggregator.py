@@ -73,15 +73,32 @@ async def get_athlete_detail(athlete_id: int, session: AsyncSession) -> Athlete 
     if not athlete:
         return None
 
-    # Check if we already have results for this athlete
-    existing_count = await session.scalar(
-        select(Result.id).where(Result.athlete_id == athlete_id).limit(1)
-    )
+    if not athlete.world_aquatics_id:
+        await _backfill_world_aquatics_id(athlete, session)
 
-    if not existing_count and athlete.world_aquatics_id:
+    if athlete.world_aquatics_id:
         await _fetch_and_store_athlete_results(athlete, session)
 
     return athlete
+
+
+async def _backfill_world_aquatics_id(athlete: Athlete, session: AsyncSession) -> None:
+    """Search WA by name to find and store the world_aquatics_id for athletes that lack one."""
+    records = await _world_aquatics.search_athletes(athlete.canonical_name, session)
+    for rec in records:
+        if not rec.world_aquatics_id:
+            continue
+        if rec.canonical_name != athlete.canonical_name:
+            continue
+        if athlete.gender and rec.gender and athlete.gender != rec.gender:
+            continue
+        athlete.world_aquatics_id = rec.world_aquatics_id
+        await session.flush()
+        log.info(
+            "Backfilled world_aquatics_id=%s for %s (athlete_id=%d)",
+            rec.world_aquatics_id, athlete.canonical_name, athlete.id,
+        )
+        return
 
 
 async def _fetch_and_store_athlete_results(athlete: Athlete, session: AsyncSession) -> None:
